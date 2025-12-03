@@ -18,7 +18,7 @@ app.use(express.json());
 
 // Home route
 app.get('/', (req, res) => {
-  res.send('Portfolio – Node.js, Express REST APIs & MongoDB is running 🚀');
+  res.send('Hello from Node API! Backend is running successfully 🚀');
 });
 
 // API routes
@@ -29,16 +29,31 @@ app.use('/api/users', usersRouter);
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server and connect DB
+// Start server with OPTIONAL DB connection
 const PORT = process.env.PORT || 4000;
+const mongoUri = process.env.MONGODB_URI;
 
-connectDB(process.env.MONGODB_URI)
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('❌ Database connection failed:', err);
-    process.exit(1);
+if (!mongoUri) {
+  // No DB configured – start API only (perfect for Render deployment)
+  console.warn('⚠ No MONGODB_URI set. Starting server WITHOUT database connection.');
+  app.listen(PORT, () => {
+    console.log(`✅ Server running (no DB) on http://localhost:${PORT}`);
   });
+} else {
+  // Normal case: connect to MongoDB then start server
+  connectDB(mongoUri)
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`✅ Server running on http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('❌ Database connection failed:', err);
+      console.warn('⚠ Starting server WITHOUT database due to connection failure.');
+      app.listen(PORT, () => {
+        console.log(
+          `✅ Server running on http://localhost:${PORT} (DB connection failed — running without DB)`
+        );
+      });
+    });
+}
